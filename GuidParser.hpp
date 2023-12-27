@@ -6,6 +6,7 @@
 #include <ranges>
 #include <cstdint>
 #include <concepts>
+#include <span>
 
 #ifndef GUID_DEFINED
 #define GUID_DEFINED
@@ -36,7 +37,7 @@ namespace GuidParser
 	namespace Private
 	{
 		template<std::unsigned_integral T>
-		inline constexpr T ParseHexNumber(const std::string_view t_hexData);
+		inline constexpr T ParseHexNumber(const std::span<const char> t_hexData);
 
 
 		struct ParseFakeException : public std::exception
@@ -60,20 +61,18 @@ namespace GuidParser
 
 		try
 		{
-	
-			guid.Data1 = Private::ParseHexNumber<std::uint32_t>(t_stringGuid.substr(1, 8));
-			guid.Data2 = Private::ParseHexNumber<std::uint16_t>(t_stringGuid.substr(10, 4));
-			guid.Data3 = Private::ParseHexNumber<std::uint16_t>(t_stringGuid.substr(15, 4));
+		
+			guid.Data1 = Private::ParseHexNumber<std::uint32_t>(std::span{ std::next(t_stringGuid.data()), 8u });
+			guid.Data2 = Private::ParseHexNumber<std::uint16_t>(std::span{ std::next(t_stringGuid.data(), 10), 4u });
+			guid.Data3 = Private::ParseHexNumber<std::uint16_t>(std::span{ std::next(t_stringGuid.data(), 15), 4u });
 
-
-			constexpr auto UnrolledParseArray = []<size_t... Is>(const std::span<unsigned char> t_buffer, const std::string_view t_begin, const std::index_sequence<Is...>)
+			constexpr auto UnrolledParseArray = []<size_t... Is>(const std::span<unsigned char> t_buffer, const std::span<const char> t_begin, const std::index_sequence<Is...>)
 			{
-				((t_buffer[Is] = Private::ParseHexNumber<std::uint8_t>(std::string_view{ std::next(t_begin.data(), Is * 2), 2u })), ...);
+				((t_buffer[Is] = Private::ParseHexNumber<std::uint8_t>(std::span{ std::next(t_begin.data(), Is * 2), 2u })), ...);
 			};
 
-	
-			UnrolledParseArray(std::span{ guid.Data4, 2u }, t_stringGuid.substr(20, 4), std::make_index_sequence<2>{});
-			UnrolledParseArray(std::span{ std::next(guid.Data4, 2), 6u }, t_stringGuid.substr(25, 12), std::make_index_sequence<6>{});
+			UnrolledParseArray(std::span{ guid.Data4, 2u }, std::span{ std::next(t_stringGuid.data(), 20), 4u }, std::make_index_sequence<2>{});
+			UnrolledParseArray(std::span{ std::next(guid.Data4, 2), 6u }, std::span{ std::next(t_stringGuid.data(), 25), 12u }, std::make_index_sequence<6>{});
 		}
 		catch ([[maybe_unused]] const Private::ParseFakeException&)
 		{
@@ -87,7 +86,7 @@ namespace GuidParser
 	namespace Private
 	{
 		template<std::unsigned_integral T>
-		constexpr T ParseHexNumber(std::string_view t_hexData)
+		constexpr T ParseHexNumber(const std::span<const char> t_hexData)
 		{
 			if (t_hexData.size() != sizeof(T) * 2)
 			{
