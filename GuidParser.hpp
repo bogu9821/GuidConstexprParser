@@ -5,6 +5,7 @@
 #include <optional>
 #include <ranges>
 #include <cstdint>
+#include <concepts>
 
 #ifndef GUID_DEFINED
 #define GUID_DEFINED
@@ -24,9 +25,12 @@ namespace GuidParser
 
 	inline constexpr std::optional<GUID> StringToGuid(const std::string_view t_stringGuid) noexcept;
 
-	consteval GUID operator"" _guid(const char* t_string, size_t t_num)
+	namespace GuidLiteral
 	{
-		return StringToGuid(std::string_view{ t_string,t_num }).value();
+		consteval GUID operator"" _guid(const char* t_string, size_t t_num)
+		{
+			return StringToGuid(std::string_view{ t_string,t_num }).value();
+		}
 	}
 
 	namespace Private
