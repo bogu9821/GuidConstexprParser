@@ -32,7 +32,7 @@ namespace GuidParser
 	namespace Private
 	{
 		template<std::unsigned_integral T>
-		inline constexpr T ParseHexNumber(std::string_view t_data);
+		inline constexpr T ParseHexNumber(const std::string_view t_hexData);
 
 
 		struct ParseFakeException : public std::exception
@@ -83,16 +83,16 @@ namespace GuidParser
 	namespace Private
 	{
 		template<std::unsigned_integral T>
-		constexpr T ParseHexNumber(std::string_view t_data)
+		constexpr T ParseHexNumber(std::string_view t_hexData)
 		{
-			if (t_data.size() != sizeof(T) * 2)
+			if (t_hexData.size() != sizeof(T) * 2)
 			{
-				throw ParseFakeException{};
+				ParseFakeException::Throw();
 			}
 
 			T number{};
 
-			for (const auto ch : t_data)
+			for (const auto ch : t_hexData)
 			{
 				number <<= 4;
 				switch (ch)
@@ -126,7 +126,7 @@ namespace GuidParser
 					number |= (10 + ch - 'A');
 					break;
 				default:
-					throw ParseFakeException{};
+					ParseFakeException::Throw();
 				}
 			}
 
