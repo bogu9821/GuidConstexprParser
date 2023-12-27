@@ -68,7 +68,7 @@ namespace GuidParser
 
 			constexpr auto UnrolledParseArray = []<size_t... Is>(const std::span<unsigned char> t_buffer, const std::string_view t_begin, const std::index_sequence<Is...>)
 			{
-				((t_buffer[Is] = Private::ParseHexNumber<unsigned char>(std::string_view{ std::next(t_begin.data(), Is * 2), 2u })), ...);
+				((t_buffer[Is] = Private::ParseHexNumber<std::uint8_t>(std::string_view{ std::next(t_begin.data(), Is * 2), 2u })), ...);
 			};
 
 	
