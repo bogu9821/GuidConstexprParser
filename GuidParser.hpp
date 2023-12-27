@@ -24,7 +24,7 @@ namespace GuidParser
 
 	inline constexpr std::optional<GUID> StringToGuid(const std::string_view t_stringGuid);
 
-	consteval GUID operator"" guid(const char* t_string, size_t t_num)
+	consteval GUID operator"" _guid(const char* t_string, size_t t_num)
 	{
 		return StringToGuid(std::string_view{ t_string,t_num }).value();
 	}
