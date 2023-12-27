@@ -22,62 +22,56 @@ namespace GuidParser
 	//{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}
 	inline constexpr size_t GUID_STRING_SIZE = 38;
 
-	inline constexpr std::optional<GUID> StringToGuid(const std::string_view t_stringGuid);
+	inline constexpr std::optional<GUID> StringToGuid(const std::string_view t_stringGuid) noexcept;
 
 	consteval GUID operator"" _guid(const char* t_string, size_t t_num)
 	{
 		return StringToGuid(std::string_view{ t_string,t_num }).value();
 	}
 
-	inline constexpr std::optional<GUID> StringToGuid(const std::string_view t_stringGuid)
+	namespace Private
+	{
+		template<std::unsigned_integral T>
+		inline constexpr T ParseHexNumber(std::string_view t_data);
+
+
+		struct ParseFakeException : public std::exception
+		{
+			static void Throw()
+			{
+				throw ParseFakeException{};
+			}
+		};
+	}
+
+
+	inline constexpr std::optional<GUID> StringToGuid(const std::string_view t_stringGuid) noexcept
 	{
 		if (t_stringGuid.size() != GUID_STRING_SIZE)
 		{
 			return {};
 		}
 
-		struct ParseException : public std::exception
-		{
-			static void Throw()
-			{
-				throw ParseException{};
-			}
-		};
-
 		GUID guid{};
 
 		try
 		{
-			constexpr auto ParseChars = [](const std::string_view t_str, auto& t_buffer)
-			{
-				const auto [ptr, ec] = std::from_chars(t_str.data(), std::next(t_str.data(), t_str.size()), t_buffer, 16);
+	
+			guid.Data1 = Private::ParseHexNumber<std::uint32_t>(t_stringGuid.substr(1, 8));
+			guid.Data2 = Private::ParseHexNumber<std::uint16_t>(t_stringGuid.substr(10, 4));
+			guid.Data3 = Private::ParseHexNumber<std::uint16_t>(t_stringGuid.substr(15, 4));
 
-				if (ec != std::errc{})
-				{
-					ParseException::Throw();
-				}
-			};
-
-			const auto Data1Begin = t_stringGuid.substr(1, 36);
-			const auto Data2Begin = Data1Begin.substr(8 + 1);
-			const auto Data3Begin = Data2Begin.substr(4 + 1);
-
-			ParseChars(Data1Begin | std::views::take(8), guid.Data1);
-			ParseChars(Data2Begin | std::views::take(4), guid.Data2);
-			ParseChars(Data3Begin | std::views::take(4), guid.Data3);
 
 			constexpr auto UnrolledParseArray = []<size_t... Is>(const std::span<unsigned char> t_buffer, const std::string_view t_begin, const std::index_sequence<Is...>)
 			{
-				((ParseChars(std::string_view{ std::next(t_begin.data(), Is * 2), 2u }, t_buffer[Is])), ...);
+				((t_buffer[Is] = Private::ParseHexNumber<unsigned char>(std::string_view{ std::next(t_begin.data(), Is * 2), 2u })), ...);
 			};
 
-			const auto Data4_1Begin = Data3Begin.substr(4 + 1);
-			const auto Data4_2Begin = Data4_1Begin.substr(4 + 1);
-
-			UnrolledParseArray(std::span{ guid.Data4, 2u }, Data4_1Begin | std::views::take(4), std::make_index_sequence<2>{});
-			UnrolledParseArray(std::span{ std::next(guid.Data4, 2), 6u }, Data4_2Begin, std::make_index_sequence<6>{});
+	
+			UnrolledParseArray(std::span{ guid.Data4, 2u }, t_stringGuid.substr(20, 4), std::make_index_sequence<2>{});
+			UnrolledParseArray(std::span{ std::next(guid.Data4, 2), 6u }, t_stringGuid.substr(25, 12), std::make_index_sequence<6>{});
 		}
-		catch ([[maybe_unused]] const ParseException&)
+		catch ([[maybe_unused]] const Private::ParseFakeException&)
 		{
 			return {};
 		}
@@ -86,5 +80,59 @@ namespace GuidParser
 		return guid;
 	}
 
+	namespace Private
+	{
+		template<std::unsigned_integral T>
+		constexpr T ParseHexNumber(std::string_view t_data)
+		{
+			if (t_data.size() != sizeof(T) * 2)
+			{
+				throw ParseFakeException{};
+			}
+
+			T number{};
+
+			for (const auto ch : t_data)
+			{
+				number <<= 4;
+				switch (ch)
+				{
+				case '0':
+				case '1':
+				case '2':
+				case '3':
+				case '4':
+				case '5':
+				case '6':
+				case '7':
+				case '8':
+				case '9':
+					number |= (ch - '0');
+					break;
+				case 'a':
+				case 'b':
+				case 'c':
+				case 'd':
+				case 'e':
+				case 'f':
+					number |= (10 + ch - 'a');
+					break;
+				case 'A':
+				case 'B':
+				case 'C':
+				case 'D':
+				case 'E':
+				case 'F':
+					number |= (10 + ch - 'A');
+					break;
+				default:
+					throw ParseFakeException{};
+				}
+			}
+
+			return number;
+		}
+
+	}
 
 }
