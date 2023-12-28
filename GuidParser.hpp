@@ -111,31 +111,15 @@ namespace GuidParser
 				number <<= 4;
 				switch (ch)
 				{
-				case '0':
-				case '1':
-				case '2':
-				case '3':
-				case '4':
-				case '5':
-				case '6':
-				case '7':
-				case '8':
-				case '9':
+				case '0': case '1': case '2': case '3': case '4':
+				case '5': case '6': case '7': case '8': case '9':
 					number |= (ch - '0');
 					break;
-				case 'a':
-				case 'b':
-				case 'c':
-				case 'd':
-				case 'e':
+				case 'a': case 'b': case 'c': case 'd': case 'e':
 				case 'f':
 					number |= (10 + ch - 'a');
 					break;
-				case 'A':
-				case 'B':
-				case 'C':
-				case 'D':
-				case 'E':
+				case 'A': case 'B': case 'C': case 'D': case 'E':
 				case 'F':
 					number |= (10 + ch - 'A');
 					break;
