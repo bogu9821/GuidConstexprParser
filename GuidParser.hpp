@@ -33,7 +33,7 @@ namespace GuidParser
 
 			if (!parsedGuid.has_value())
 			{
-				throw std::logic_error("Unvalid GUID format");
+				Private::ParseFakeException::Throw();
 			}
 
 			return parsedGuid.value();
