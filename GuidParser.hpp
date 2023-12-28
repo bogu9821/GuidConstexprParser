@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 #include <optional>
 #include <cstdint>
 #include <concepts>
@@ -26,7 +26,7 @@ namespace GuidParser
 
 	namespace GuidLiteral
 	{
-		consteval GUID operator"" _guid(const char* t_string, size_t t_num)
+		consteval GUID operator"" _guid(const char* t_string, const size_t t_num)
 		{
 			return StringToGuid(std::string_view{ t_string,t_num }).value();
 		}
