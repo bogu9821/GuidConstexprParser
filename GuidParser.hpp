@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <concepts>
 #include <span>
+#include <exception>
 
 #ifndef GUID_DEFINED
 #define GUID_DEFINED
@@ -28,7 +29,14 @@ namespace GuidParser
 	{
 		consteval GUID operator"" _guid(const char* t_string, const size_t t_num)
 		{
-			return StringToGuid(std::string_view{ t_string,t_num }).value();
+			const auto parsedGuid = StringToGuid(std::string_view{ t_string,t_num });
+
+			if (!parsedGuid.has_value())
+			{
+				throw std::logic_error("Unvalid GUID format");
+			}
+
+			return parsedGuid.value();
 		}
 	}
 
@@ -55,11 +63,14 @@ namespace GuidParser
 			return {};
 		}
 
-		GUID guid{};
+		if (t_stringGuid.front() != '{' || t_stringGuid.back() != '}')
+		{
+			return{};
+		}
 
 		try
 		{
-		
+			GUID guid{};
 			guid.Data1 = Private::ParseHexNumber<std::uint32_t>(std::span{ std::next(t_stringGuid.data()), 8u });
 			guid.Data2 = Private::ParseHexNumber<std::uint16_t>(std::span{ std::next(t_stringGuid.data(), 10), 4u });
 			guid.Data3 = Private::ParseHexNumber<std::uint16_t>(std::span{ std::next(t_stringGuid.data(), 15), 4u });
@@ -71,6 +82,8 @@ namespace GuidParser
 
 			UnrolledParseArray(std::span{ guid.Data4, 2u }, std::span{ std::next(t_stringGuid.data(), 20), 4u }, std::make_index_sequence<2>{});
 			UnrolledParseArray(std::span{ std::next(guid.Data4, 2), 6u }, std::span{ std::next(t_stringGuid.data(), 25), 12u }, std::make_index_sequence<6>{});
+
+			return guid;
 		}
 		catch ([[maybe_unused]] const Private::ParseFakeException&)
 		{
@@ -78,7 +91,7 @@ namespace GuidParser
 		}
 
 
-		return guid;
+		return {};
 	}
 
 	namespace Private
