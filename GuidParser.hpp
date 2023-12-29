@@ -28,7 +28,7 @@ namespace GuidParser
 	inline constexpr std::optional<GUID> StringToGuid(const std::string_view t_stringGuid) noexcept;
 	
 	template<bool NullTerminated = true>
-	inline constexpr auto GuidToString(const GUID& t_guid);
+	inline constexpr auto GuidToString(const GUID& t_guid) noexcept;
 
 	namespace Private
 	{
