@@ -3,11 +3,11 @@
 #include <string_view>
 #include <optional>
 #include <cstdint>
-#include <concepts>
 #include <span>
 #include <exception>
 #include <array>
-#include <xutility>
+#include <iterator>
+
 
 #ifndef GUID_DEFINED
 #define GUID_DEFINED
@@ -26,15 +26,12 @@ namespace GuidParser
 	inline constexpr size_t GUID_STRING_SIZE = 38;
 
 	inline constexpr std::optional<GUID> StringToGuid(const std::string_view t_stringGuid) noexcept;
-	
+
 	template<bool NullTerminated = true>
 	inline constexpr auto GuidToString(const GUID& t_guid) noexcept;
 
 	namespace Private
 	{
-		template<std::unsigned_integral T>
-		inline constexpr T ParseHexNumber(const std::span<const char> t_hexData);
-
 		struct ParseFakeException : public std::exception
 		{
 			static void Throw()
@@ -42,6 +39,57 @@ namespace GuidParser
 				throw ParseFakeException{};
 			}
 		};
+
+		template<typename T>
+		inline constexpr T ParseHexNumber(const std::span<const char> t_hexData)
+		{
+			if (t_hexData.size() != sizeof(T) * 2)
+			{
+				ParseFakeException::Throw();
+			}
+
+			T number{};
+
+			for (const auto ch : t_hexData)
+			{
+				number <<= 4;
+				switch (ch)
+				{
+				case '0': 
+				case '1': 
+				case '2': 
+				case '3': 
+				case '4':
+				case '5': 
+				case '6': 
+				case '7': 
+				case '8':
+				case '9':
+					number |= (ch - '0');
+					break;
+				case 'a': 
+				case 'b':
+				case 'c': 
+				case 'd': 
+				case 'e':
+				case 'f':
+					number |= (10 + ch - 'a');
+					break;
+				case 'A': 
+				case 'B':
+				case 'C':
+				case 'D': 
+				case 'E':
+				case 'F':
+					number |= (10 + ch - 'A');
+					break;
+				default:
+					ParseFakeException::Throw();
+				}
+			}
+
+			return number;
+		}
 	}
 
 	namespace GuidLiteral
@@ -121,15 +169,15 @@ namespace GuidParser
 
 
 		constexpr auto NumberToHexString = [](const auto t_buffer, auto t_integer)
-		{
-			constexpr const char hexChars[] = "0123456789abcdef";
-		
-			for(auto rbegin = std::rbegin(t_buffer); t_integer != 0 && rbegin != std::rend(t_buffer); rbegin++, t_integer >>= 4)
 			{
-				*rbegin = hexChars[t_integer & 0xf];
-			} 
+				constexpr const char hexChars[] = "0123456789abcdef";
 
-		};
+				for (auto rbegin = std::rbegin(t_buffer); t_integer != 0 && rbegin != std::rend(t_buffer); rbegin++, t_integer >>= 4)
+				{
+					*rbegin = hexChars[t_integer & 0xf];
+				}
+
+			};
 
 		NumberToHexString(std::span{ std::next(buffer.data()), 8u }, t_guid.Data1);
 		NumberToHexString(std::span{ std::next(buffer.data(), 10), 4u }, t_guid.Data2);
@@ -158,44 +206,4 @@ namespace GuidParser
 		return buffer;
 
 	}
-
-	namespace Private
-	{
-		template<std::unsigned_integral T>
-		constexpr T ParseHexNumber(const std::span<const char> t_hexData)
-		{
-			if (t_hexData.size() != sizeof(T) * 2)
-			{
-				ParseFakeException::Throw();
-			}
-
-			T number{};
-
-			for (const auto ch : t_hexData)
-			{
-				number <<= 4;
-				switch (ch)
-				{
-				case '0': case '1': case '2': case '3': case '4':
-				case '5': case '6': case '7': case '8': case '9':
-					number |= (ch - '0');
-					break;
-				case 'a': case 'b': case 'c': case 'd': case 'e':
-				case 'f':
-					number |= (10 + ch - 'a');
-					break;
-				case 'A': case 'B': case 'C': case 'D': case 'E':
-				case 'F':
-					number |= (10 + ch - 'A');
-					break;
-				default:
-					ParseFakeException::Throw();
-				}
-			}
-
-			return number;
-		}
-
-	}
-
 }
