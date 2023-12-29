@@ -6,6 +6,8 @@
 #include <concepts>
 #include <span>
 #include <exception>
+#include <array>
+#include <xutility>
 
 #ifndef GUID_DEFINED
 #define GUID_DEFINED
@@ -24,12 +26,14 @@ namespace GuidParser
 	inline constexpr size_t GUID_STRING_SIZE = 38;
 
 	inline constexpr std::optional<GUID> StringToGuid(const std::string_view t_stringGuid) noexcept;
+	
+	template<bool NullTerminated = true>
+	inline constexpr auto GuidToString(const GUID& t_guid);
 
 	namespace Private
 	{
 		template<std::unsigned_integral T>
 		inline constexpr T ParseHexNumber(const std::span<const char> t_hexData);
-
 
 		struct ParseFakeException : public std::exception
 		{
@@ -50,8 +54,10 @@ namespace GuidParser
 			{
 				Private::ParseFakeException::Throw();
 			}
-
-			return parsedGuid.value();
+			else
+			{
+				return parsedGuid.value();
+			}
 		}
 	}
 
@@ -92,6 +98,65 @@ namespace GuidParser
 
 
 		return {};
+	}
+
+	template<bool NullTerminated>
+	inline constexpr auto GuidToString(const GUID& t_guid)
+	{
+		constexpr auto size = NullTerminated ? GUID_STRING_SIZE + 1 : GUID_STRING_SIZE;
+
+		std::array<char, size> buffer;
+
+		if constexpr (NullTerminated)
+		{
+			buffer = { 0 };
+		}
+
+		buffer[0] = '{';
+		buffer[9] = '-';
+		buffer[14] = '-';
+		buffer[19] = '-';
+		buffer[24] = '-';
+		buffer[GUID_STRING_SIZE - 1] = '}';
+
+
+		constexpr auto NumberToHexString = [](const auto t_buffer, auto t_integer)
+		{
+			constexpr const char hexChars[] = "0123456789abcdef";
+		
+			for(auto rbegin = std::rbegin(t_buffer); t_integer != 0 && rbegin != std::rend(t_buffer); rbegin++, t_integer >>= 4)
+			{
+				*rbegin = hexChars[t_integer & 0xf];
+			} 
+
+		};
+
+		NumberToHexString(std::span{ std::next(buffer.data()), 8u }, t_guid.Data1);
+		NumberToHexString(std::span{ std::next(buffer.data(), 10), 4u }, t_guid.Data2);
+		NumberToHexString(std::span{ std::next(buffer.data(), 15), 4u }, t_guid.Data3);
+
+
+
+		std::uint16_t packedData4_1 =
+			(static_cast<std::uint16_t>(t_guid.Data4[0]) << 8)
+			| (static_cast<std::uint16_t>(t_guid.Data4[1]));
+
+
+		std::int64_t packedData4_2 =
+			(static_cast<std::int64_t>(t_guid.Data4[2]) << 40) |
+			(static_cast<std::int64_t>(t_guid.Data4[3]) << 32) |
+			(static_cast<std::int64_t>(t_guid.Data4[4]) << 24) |
+			(static_cast<std::int64_t>(t_guid.Data4[5]) << 16) |
+			(static_cast<std::int64_t>(t_guid.Data4[6]) << 8) |
+			static_cast<std::int64_t>(t_guid.Data4[7]);
+
+
+		NumberToHexString(std::span{ std::next(buffer.data(), 20), 4u }, packedData4_1);
+		NumberToHexString(std::span{ std::next(buffer.data(), 25), 12u }, packedData4_2);
+
+
+		return buffer;
+
 	}
 
 	namespace Private
