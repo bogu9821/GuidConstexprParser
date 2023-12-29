@@ -107,17 +107,17 @@ namespace GuidParser
 
 		std::array<char, size> buffer;
 
-		if constexpr (NullTerminated)
-		{
-			buffer = { 0 };
-		}
-
 		buffer[0] = '{';
 		buffer[9] = '-';
 		buffer[14] = '-';
 		buffer[19] = '-';
 		buffer[24] = '-';
 		buffer[GUID_STRING_SIZE - 1] = '}';
+
+		if constexpr (NullTerminated)
+		{
+			buffer[GUID_STRING_SIZE] = '\0';
+		}
 
 
 		constexpr auto NumberToHexString = [](const auto t_buffer, auto t_integer)
