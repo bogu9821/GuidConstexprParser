@@ -25,21 +25,6 @@ namespace GuidParser
 
 	inline constexpr std::optional<GUID> StringToGuid(const std::string_view t_stringGuid) noexcept;
 
-	namespace GuidLiteral
-	{
-		consteval GUID operator"" _guid(const char* t_string, const size_t t_num)
-		{
-			const auto parsedGuid = StringToGuid(std::string_view{ t_string,t_num });
-
-			if (!parsedGuid.has_value())
-			{
-				Private::ParseFakeException::Throw();
-			}
-
-			return parsedGuid.value();
-		}
-	}
-
 	namespace Private
 	{
 		template<std::unsigned_integral T>
@@ -53,6 +38,21 @@ namespace GuidParser
 				throw ParseFakeException{};
 			}
 		};
+	}
+
+	namespace GuidLiteral
+	{
+		consteval GUID operator"" _guid(const char* t_string, const size_t t_num)
+		{
+			const auto parsedGuid = StringToGuid(std::string_view{ t_string,t_num });
+
+			if (!parsedGuid.has_value())
+			{
+				Private::ParseFakeException::Throw();
+			}
+
+			return parsedGuid.value();
+		}
 	}
 
 
