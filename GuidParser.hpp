@@ -101,7 +101,7 @@ namespace GuidParser
 	}
 
 	template<bool NullTerminated>
-	inline constexpr auto GuidToString(const GUID& t_guid)
+	inline constexpr auto GuidToString(const GUID& t_guid) noexcept
 	{
 		constexpr auto size = NullTerminated ? GUID_STRING_SIZE + 1 : GUID_STRING_SIZE;
 
