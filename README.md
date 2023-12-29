@@ -5,7 +5,7 @@
 
 #include <algorithm>    //std::ranges::equal
 #include <array>        //std::array
-#include <print>        //std::println
+#include <iostream>     //std::cout
 
 using namespace GuidParser::GuidLiteral;
 
@@ -19,7 +19,7 @@ int main()
 
 	static constexpr auto stringGuid = GuidParser::GuidToString(guid);
 	
-	std::println("static_assert for {} passed", stringGuid.data());
+	std::cout << "static_assert for " << stringGuid.data() << " passed\n";
 
 	std::optional<GUID> optionalGuid = GuidParser::StringToGuid("{474ccf9f-bad7-48e2-b7c6-df307b74e4a5}");
 
