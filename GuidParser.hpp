@@ -7,6 +7,7 @@
 #include <exception>
 #include <array>
 #include <iterator>
+#include <algorithm>
 
 
 #ifndef GUID_DEFINED
@@ -19,6 +20,31 @@ struct GUID
 	std::uint8_t Data4[8];
 };
 #endif
+
+constexpr bool operator==(const GUID& t_left, const GUID& t_right)
+{
+	//unfortuently memmcpy isn't constexpr yet
+	//if we don't want to declare the operator inside the struct
+	//we have to check every field
+
+	if (t_left.Data1 != t_right.Data1)
+	{
+		return false;
+	}
+
+	if (t_left.Data2 != t_right.Data2)
+	{
+		return false;
+	}
+
+	if (t_left.Data3 != t_right.Data3)
+	{
+		return false;
+	}
+
+	return std::equal(t_left.Data4, std::next(t_left.Data4, 8), t_right.Data4, std::next(t_right.Data4, 8));
+}
+
 
 namespace GuidParser
 {
@@ -55,30 +81,30 @@ namespace GuidParser
 				number <<= 4;
 				switch (ch)
 				{
-				case '0': 
-				case '1': 
-				case '2': 
-				case '3': 
+				case '0':
+				case '1':
+				case '2':
+				case '3':
 				case '4':
-				case '5': 
-				case '6': 
-				case '7': 
+				case '5':
+				case '6':
+				case '7':
 				case '8':
 				case '9':
 					number |= (ch - '0');
 					break;
-				case 'a': 
+				case 'a':
 				case 'b':
-				case 'c': 
-				case 'd': 
+				case 'c':
+				case 'd':
 				case 'e':
 				case 'f':
 					number |= (10 + ch - 'a');
 					break;
-				case 'A': 
+				case 'A':
 				case 'B':
 				case 'C':
-				case 'D': 
+				case 'D':
 				case 'E':
 				case 'F':
 					number |= (10 + ch - 'A');
@@ -186,8 +212,8 @@ namespace GuidParser
 
 
 		std::uint16_t packedData4_1 =
-			(static_cast<std::uint16_t>(t_guid.Data4[0]) << 8)
-			| (static_cast<std::uint16_t>(t_guid.Data4[1]));
+			(static_cast<std::uint16_t>(t_guid.Data4[0]) << 8) |
+			(static_cast<std::uint16_t>(t_guid.Data4[1]));
 
 
 		std::int64_t packedData4_2 =
